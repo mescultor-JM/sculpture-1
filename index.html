@@ -40,7 +40,6 @@
       z-index: 100;
     }
 
-    /* AR Tracking Hint Overlay */
     #ar-hint {
       position: absolute;
       top: 60px;
@@ -164,15 +163,14 @@
     </button>
   </div>
 
-  <!-- AR Tracking Hint -->
   <div id="ar-hint">Move phone slowly over the floor to detect surface</div>
 
   <!-- 
-    SPATIAL FIXES APPLIED:
-    1. camera-target="auto" -> Removed the Y-offset so the model origin sits exactly on the tracked plane.
-    2. ar-tracking="surface" -> Forces the native SDK to strictly track horizontal floor surfaces.
-    3. shadow-bias="-0.002" -> Forces the shadow to bleed slightly under the model, optically "gluing" it to the floor.
-    4. shadow-softness="0.8" -> Softer shadows look more realistic in AR lighting.
+    GROUND PLANE FIX:
+    camera-target="0m -0.12m 0m" -> Shifts the model down by 12cm so its base touches the ground plane.
+    Adjust this value if needed:
+      - Still floating? Try -0.15m or -0.18m
+      - Sinking into floor? Try -0.08m or -0.10m
   -->
   <model-viewer 
     id="ar-model"
@@ -183,7 +181,7 @@
     ar-placement="floor"
     ar-tracking="surface"
     camera-controls 
-    camera-target="auto"
+    camera-target="0m -0.12m 0m"
     shadow-intensity="1"
     shadow-softness="0.8"
     shadow-bias="-0.002"
@@ -232,7 +230,6 @@
       modelViewer.activateAR();
     });
 
-    // Handle AR Session State & Show Tracking Hint
     modelViewer.addEventListener('ar-status', (event) => {
       const status = event.detail.status;
       console.log('[AR Status]', status);
@@ -241,9 +238,7 @@
         arButton.classList.remove('flipped');
         arHint.classList.remove('visible');
       } else if (status === 'presenting') {
-        // Show the hint when AR starts
         arHint.classList.add('visible');
-        // Hide the hint after 4 seconds
         setTimeout(() => {
           arHint.classList.remove('visible');
         }, 4000);
