@@ -15,7 +15,7 @@
       padding: 0;
       width: 100%;
       height: 100%;
-      background-color: #ffffff; /* Clean white background as requested */
+      background-color: #ffffff;
       overflow: hidden;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
@@ -43,16 +43,99 @@
       z-index: 100;
     }
 
-    /* Future UI containers (Phase 2+) - currently hidden or minimal */
+    /* UI Layer for floating buttons */
     #ui-layer {
       position: absolute;
       bottom: 40px;
-      right: 50px;
+      left: 50%;
+      transform: translateX(-50%);
       display: flex;
       flex-direction: column;
-      gap: 24px;
+      align-items: center;
+      gap: 16px;
       z-index: 10;
       width: 100%;
+      pointer-events: none; /* Let clicks pass through around the button */
+    }
+
+    /* --- DOUBLE-SIDED FLIP BUTTON STYLES (2X LARGER) --- */
+    .flip-button-container {
+      perspective: 1000px;
+      width: 360px; /* 2X: was 180px */
+      height: 112px; /* 2X: was 56px */
+      pointer-events: auto; /* Re-enable clicks on the button itself */
+    }
+
+    .flip-button {
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      outline: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .flip-button-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      text-align: center;
+      transition: transform 0.5s cubic-bezier(0.4, 0.0, 0.2, 1);
+      transform-style: preserve-3d;
+      border-radius: 56px; /* 2X: was 28px */
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Flip state triggered by JS */
+    .flip-button.flipped .flip-button-inner {
+      transform: rotateX(180deg);
+    }
+
+    .flip-button-front, .flip-button-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+      border-radius: 56px; /* 2X: was 28px */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px; /* 2X: was 8px */
+      font-weight: 600;
+      font-size: 32px; /* 2X: was 16px */
+      letter-spacing: 1px; /* 2X: was 0.5px */
+    }
+
+    /* Front: Primary Action */
+    .flip-button-front {
+      background: linear-gradient(135deg, #007AFF 0%, #0055D4 100%);
+      color: white;
+    }
+
+    /* Back: Active/Processing State */
+    .flip-button-back {
+      background: linear-gradient(135deg, #34C759 0%, #248A3D 100%);
+      color: white;
+      transform: rotateX(180deg);
+    }
+
+    .flip-button svg {
+      width: 40px; /* 2X: was 20px */
+      height: 40px; /* 2X: was 20px */
+      fill: currentColor;
+    }
+
+    /* Optional: Subtle pulse animation to draw attention */
+    @keyframes pulse {
+      0% { box-shadow: 0 8px 24px rgba(0, 122, 255, 0.3); }
+      50% { box-shadow: 0 8px 32px rgba(0, 122, 255, 0.6); }
+      100% { box-shadow: 0 8px 24px rgba(0, 122, 255, 0.3); }
+    }
+    .flip-button:not(.flipped) .flip-button-inner {
+      animation: pulse 2.5s infinite;
     }
   </style>
 </head>
@@ -69,53 +152,84 @@
 
   <!-- 
     Baseline model-viewer 
-    - ar-modes prioritizes scene-viewer (native Android ARCore) then webxr.
-    - environment-image="neutral" ensures consistent lighting on the white background.
+    - Removed interaction-prompt="auto" since we now have a custom button.
+    - Added id for JS targeting.
   -->
   <model-viewer 
     id="ar-model"
     src="./escultura.glb" 
     alt="A 3D model of a sculpture"
     ar 
-    ar-modes="scene-viewer webxr" 
+    ar-modes="scene-viewer webxr quick-look" 
     ar-placement="floor"
     camera-controls 
     shadow-intensity="1"
     exposure="1"
-    environment-image="neutral"
-    interaction-prompt="auto">
-    
-    <!-- Navigation cube is natively handled by model-viewer's camera-controls.
-         We will style its position in later phases if needed, but it defaults 
-         to a non-obtrusive position that works well on mobile. -->
-
+    environment-image="neutral">
   </model-viewer>
 
-  <!-- UI Layer placeholder for Phase 2 (Photo/AR buttons) -->
+  <!-- UI Layer with Double-Sided AR Button (2X LARGER) -->
   <div id="ui-layer">
-    <!-- Buttons will be injected here in Phase 2 -->
+    <div class="flip-button-container">
+      <button id="ar-button" class="flip-button" aria-label="View sculpture in Augmented Reality">
+        <div class="flip-button-inner">
+          <!-- Front Face -->
+          <div class="flip-button-front">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+            <span>View in AR</span>
+          </div>
+          <!-- Back Face -->
+          <div class="flip-button-back">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+            <span>Activating...</span>
+          </div>
+        </div>
+      </button>
+    </div>
   </div>
 
   <script>
-    // Phase 1: Robust Error Handling
-    // Prevents the "infinite loading" state if the GLB is missing or corrupt.
+    // Phase 1 & 2: Robust Error Handling + Custom AR Button Logic
     const modelViewer = document.querySelector('#ar-model');
     const errorMessage = document.querySelector('#error-message');
     const errorText = document.querySelector('#error-text');
+    const arButton = document.querySelector('#ar-button');
 
+    // 1. Error Handling
     modelViewer.addEventListener('error', (event) => {
       console.error('[Model Viewer Error]', event);
       errorText.textContent = 'Failed to load the 3D model. Please check the file path (./escultura.glb) and ensure you are using a secure (HTTPS) connection.';
       errorMessage.style.display = 'block';
+      // Hide AR button if model fails to load
+      arButton.style.display = 'none';
     });
 
     modelViewer.addEventListener('load', () => {
       console.log('[Model Viewer] Model loaded successfully.');
-      // Ensure error message is hidden if a previous error occurred and model was retried
       errorMessage.style.display = 'none';
     });
 
-    // Log environment info for debugging Android devices later
+    // 2. Custom AR Button Logic
+    arButton.addEventListener('click', () => {
+      // Flip the button to the "Activating..." side for instant visual feedback
+      arButton.classList.add('flipped');
+      
+      // Trigger the native AR experience
+      modelViewer.activateAR();
+    });
+
+    // 3. Reset button state if AR session is dismissed or fails
+    modelViewer.addEventListener('ar-status', (event) => {
+      const status = event.detail.status;
+      console.log('[AR Status]', status);
+      
+      // If AR fails to start or the user closes the native AR view, reset the button
+      if (status === 'failed' || status === 'not-presenting') {
+        arButton.classList.remove('flipped');
+      }
+    });
+
+    // Log environment info for debugging
     console.log('[App Init] User Agent:', navigator.userAgent);
     console.log('[App Init] Secure Context:', window.isSecureContext ? 'Yes' : 'No');
   </script>
