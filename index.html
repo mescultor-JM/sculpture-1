@@ -166,9 +166,9 @@
   <div id="ar-hint">Move phone slowly over the floor to detect surface</div>
 
   <!-- 
-    GAP FIX:
-    camera-target="0m -0.15m 0m" pushes the model down by 15cm to close the floating gap.
-    shadow-bias="-0.003" forces the shadow to bleed under the model for visual grounding.
+    DISTANCE FIX:
+    camera-orbit="0deg 75deg 2.25m" pulls the camera back by 50% (from default ~1.5m to 2.25m).
+    This makes the object appear farther away while keeping its physical scale unchanged.
   -->
   <model-viewer 
     id="ar-model"
@@ -179,6 +179,7 @@
     ar-placement="floor"
     ar-tracking="surface"
     camera-controls 
+    camera-orbit="0deg 75deg 2.25m"
     camera-target="0m -0.15m 0m"
     shadow-intensity="1"
     shadow-softness="0.8"
