@@ -58,12 +58,12 @@
       pointer-events: none; /* Let clicks pass through around the button */
     }
 
-    /* --- DOUBLE-SIDED FLIP BUTTON STYLES (2X LARGER) --- */
+    /* --- DOUBLE-SIDED FLIP BUTTON STYLES (OPTIMIZED SIZE) --- */
     .flip-button-container {
       perspective: 1000px;
-      width: 360px; /* 2X: was 180px */
-      height: 112px; /* 2X: was 56px */
-      pointer-events: auto; /* Re-enable clicks on the button itself */
+      width: 220px; /* Optimized width */
+      height: 64px; /* Optimized height */
+      pointer-events: auto; 
     }
 
     .flip-button {
@@ -84,7 +84,7 @@
       text-align: center;
       transition: transform 0.5s cubic-bezier(0.4, 0.0, 0.2, 1);
       transform-style: preserve-3d;
-      border-radius: 56px; /* 2X: was 28px */
+      border-radius: 32px; /* Optimized rounded corners */
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     }
 
@@ -99,14 +99,14 @@
       height: 100%;
       -webkit-backface-visibility: hidden;
       backface-visibility: hidden;
-      border-radius: 56px; /* 2X: was 28px */
+      border-radius: 32px; 
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 16px; /* 2X: was 8px */
+      gap: 10px; /* Optimized spacing */
       font-weight: 600;
-      font-size: 32px; /* 2X: was 16px */
-      letter-spacing: 1px; /* 2X: was 0.5px */
+      font-size: 18px; /* Optimized font size */
+      letter-spacing: 0.5px; 
     }
 
     /* Front: Primary Action */
@@ -123,8 +123,8 @@
     }
 
     .flip-button svg {
-      width: 40px; /* 2X: was 20px */
-      height: 40px; /* 2X: was 20px */
+      width: 22px; /* Optimized icon size */
+      height: 22px; 
       fill: currentColor;
     }
 
@@ -150,11 +150,6 @@
     </button>
   </div>
 
-  <!-- 
-    Baseline model-viewer 
-    - Removed interaction-prompt="auto" since we now have a custom button.
-    - Added id for JS targeting.
-  -->
   <model-viewer 
     id="ar-model"
     src="./escultura.glb" 
@@ -168,7 +163,7 @@
     environment-image="neutral">
   </model-viewer>
 
-  <!-- UI Layer with Double-Sided AR Button (2X LARGER) -->
+  <!-- UI Layer with Double-Sided AR Button -->
   <div id="ui-layer">
     <div class="flip-button-container">
       <button id="ar-button" class="flip-button" aria-label="View sculpture in Augmented Reality">
@@ -200,7 +195,6 @@
       console.error('[Model Viewer Error]', event);
       errorText.textContent = 'Failed to load the 3D model. Please check the file path (./escultura.glb) and ensure you are using a secure (HTTPS) connection.';
       errorMessage.style.display = 'block';
-      // Hide AR button if model fails to load
       arButton.style.display = 'none';
     });
 
@@ -211,25 +205,18 @@
 
     // 2. Custom AR Button Logic
     arButton.addEventListener('click', () => {
-      // Flip the button to the "Activating..." side for instant visual feedback
       arButton.classList.add('flipped');
-      
-      // Trigger the native AR experience
       modelViewer.activateAR();
     });
 
     // 3. Reset button state if AR session is dismissed or fails
     modelViewer.addEventListener('ar-status', (event) => {
       const status = event.detail.status;
-      console.log('[AR Status]', status);
-      
-      // If AR fails to start or the user closes the native AR view, reset the button
       if (status === 'failed' || status === 'not-presenting') {
         arButton.classList.remove('flipped');
       }
     });
 
-    // Log environment info for debugging
     console.log('[App Init] User Agent:', navigator.userAgent);
     console.log('[App Init] Secure Context:', window.isSecureContext ? 'Yes' : 'No');
   </script>
