@@ -166,11 +166,9 @@
   <div id="ar-hint">Move phone slowly over the floor to detect surface</div>
 
   <!-- 
-    GROUND PLANE FIX:
-    camera-target="0m -0.12m 0m" -> Shifts the model down by 12cm so its base touches the ground plane.
-    Adjust this value if needed:
-      - Still floating? Try -0.15m or -0.18m
-      - Sinking into floor? Try -0.08m or -0.10m
+    GAP FIX:
+    camera-target="0m -0.15m 0m" pushes the model down by 15cm to close the floating gap.
+    shadow-bias="-0.003" forces the shadow to bleed under the model for visual grounding.
   -->
   <model-viewer 
     id="ar-model"
@@ -181,10 +179,10 @@
     ar-placement="floor"
     ar-tracking="surface"
     camera-controls 
-    camera-target="0m -0.12m 0m"
+    camera-target="0m -0.15m 0m"
     shadow-intensity="1"
     shadow-softness="0.8"
-    shadow-bias="-0.002"
+    shadow-bias="-0.003"
     exposure="1"
     environment-image="neutral">
   </model-viewer>
