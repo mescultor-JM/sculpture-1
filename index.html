@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>AR Sculpture</title>
   
-  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
+  <!-- Updated to latest stable 4.x version for best compatibility -->
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.3.1/model-viewer.min.js"></script>
 
   <style>
     body, html {
@@ -152,15 +153,16 @@
       animation: pulse 2.5s infinite;
     }
 
-    /* 3D Rotation Cube Control */
+    /* 3D Rotation Cube Control - HIDDEN BY DEFAULT */
     #rotation-cube-container {
+      display: none; /* Only shown via JS when AR is active */
       position: absolute;
       bottom: 40px;
       right: 40px;
       width: 80px;
       height: 80px;
       perspective: 400px;
-      z-index: 10;
+      z-index: 1000; /* High z-index to attempt overlay */
       pointer-events: auto;
     }
 
@@ -220,7 +222,7 @@
       left: 50%;
       transform: translateX(-50%);
       font-size: 10px;
-      color: rgba(0,0,0,0.6);
+      color: rgba(255,255,255,0.8);
       white-space: nowrap;
       pointer-events: none;
     }
@@ -286,7 +288,7 @@
       <span class="axis-label" id="axis-y">Y</span>
       <span class="axis-label" id="axis-z">Z</span>
     </div>
-    <div class="cube-hint">Drag to rotate</div>
+    <div class="cube-hint">Drag to rotate in AR</div>
   </div>
 
   <script>
@@ -296,6 +298,7 @@
     const arButton = document.querySelector('#ar-button');
     const arHint = document.querySelector('#ar-hint');
     const rotationCube = document.querySelector('#rotation-cube');
+    const rotationCubeContainer = document.querySelector('#rotation-cube-container');
 
     modelViewer.addEventListener('error', (event) => {
       console.error('[Model Viewer Error]', event);
@@ -318,14 +321,18 @@
       const status = event.detail.status;
       console.log('[AR Status]', status);
       
-      if (status === 'failed' || status === 'not-presenting') {
-        arButton.classList.remove('flipped');
-        arHint.classList.remove('visible');
-      } else if (status === 'presenting') {
+      if (status === 'presenting') {
+        // Show the cube ONLY when AR is actively presenting
+        rotationCubeContainer.style.display = 'block';
         arHint.classList.add('visible');
         setTimeout(() => {
           arHint.classList.remove('visible');
         }, 4000);
+      } else {
+        // Hide the cube when AR is closed, fails, or hasn't started
+        rotationCubeContainer.style.display = 'none';
+        arButton.classList.remove('flipped');
+        arHint.classList.remove('visible');
       }
     });
 
@@ -358,14 +365,10 @@
       const deltaX = pos.x - previousMousePosition.x;
       const deltaY = pos.y - previousMousePosition.y;
 
-      // Update rotation based on drag
       rotation.y += deltaX * 0.5;
       rotation.x += deltaY * 0.5;
-
-      // Clamp X rotation to prevent flipping
       rotation.x = Math.max(-90, Math.min(90, rotation.x));
 
-      // Apply rotation to the cube widget
       rotationCube.style.transform = `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`;
 
       // Sync with model-viewer camera orbit
