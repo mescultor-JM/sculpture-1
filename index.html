@@ -5,11 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>AR Sculpture</title>
   
-  <!-- Load model-viewer (no build step, no npm) -->
-  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.3.1/model-viewer.min.js"></script>
 
   <style>
-    /* Minimal reset to ensure it fills the screen on mobile */
     body, html {
       margin: 0;
       padding: 0;
@@ -26,7 +24,6 @@
       display: block;
     }
 
-    /* Error message container (hidden by default) */
     #error-message {
       display: none;
       position: absolute;
@@ -43,7 +40,34 @@
       z-index: 100;
     }
 
-    /* UI Layer for floating buttons */
+    #ar-hint {
+      position: absolute;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.75);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 24px;
+      font-size: 14px;
+      font-weight: 500;
+      text-align: center;
+      z-index: 20;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+      pointer-events: none;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      /* Hidden by default, shown via ar-status */
+      display: none; 
+    }
+
+    /* Show hint ONLY when AR session is starting/active */
+    model-viewer[ar-status="session-started"] #ar-hint {
+      display: block;
+      opacity: 1;
+    }
+
     #ui-layer {
       position: absolute;
       bottom: 40px;
@@ -55,14 +79,13 @@
       gap: 16px;
       z-index: 10;
       width: 100%;
-      pointer-events: none; /* Let clicks pass through around the button */
+      pointer-events: none;
     }
 
-    /* --- DOUBLE-SIDED FLIP BUTTON STYLES (OPTIMIZED SIZE) --- */
     .flip-button-container {
       perspective: 1000px;
-      width: 220px; /* Optimized width */
-      height: 64px; /* Optimized height */
+      width: 220px;
+      height: 64px;
       pointer-events: auto; 
     }
 
@@ -84,11 +107,10 @@
       text-align: center;
       transition: transform 0.5s cubic-bezier(0.4, 0.0, 0.2, 1);
       transform-style: preserve-3d;
-      border-radius: 32px; /* Optimized rounded corners */
+      border-radius: 32px;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     }
 
-    /* Flip state triggered by JS */
     .flip-button.flipped .flip-button-inner {
       transform: rotateX(180deg);
     }
@@ -103,19 +125,17 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 10px; /* Optimized spacing */
+      gap: 10px;
       font-weight: 600;
-      font-size: 18px; /* Optimized font size */
+      font-size: 18px;
       letter-spacing: 0.5px; 
     }
 
-    /* Front: Primary Action */
     .flip-button-front {
       background: linear-gradient(135deg, #007AFF 0%, #0055D4 100%);
       color: white;
     }
 
-    /* Back: Active/Processing State */
     .flip-button-back {
       background: linear-gradient(135deg, #34C759 0%, #248A3D 100%);
       color: white;
@@ -123,12 +143,11 @@
     }
 
     .flip-button svg {
-      width: 22px; /* Optimized icon size */
+      width: 22px;
       height: 22px; 
       fill: currentColor;
     }
 
-    /* Optional: Subtle pulse animation to draw attention */
     @keyframes pulse {
       0% { box-shadow: 0 8px 24px rgba(0, 122, 255, 0.3); }
       50% { box-shadow: 0 8px 32px rgba(0, 122, 255, 0.6); }
@@ -137,11 +156,90 @@
     .flip-button:not(.flipped) .flip-button-inner {
       animation: pulse 2.5s infinite;
     }
+
+    /* 3D Rotation Cube Control */
+    #rotation-cube-container {
+      /* HIDDEN BY DEFAULT */
+      display: none; 
+      position: absolute;
+      bottom: 40px;
+      right: 40px;
+      width: 80px;
+      height: 80px;
+      perspective: 400px;
+      z-index: 1000;
+      pointer-events: auto;
+    }
+
+    /* SHOW ONLY WHEN WEBXR AR SESSION IS ACTIVE */
+    model-viewer[ar-status="session-started"] #rotation-cube-container {
+      display: block;
+    }
+
+    #rotation-cube {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      cursor: grab;
+      touch-action: none; /* Prevents browser scrolling/zooming while dragging cube */
+    }
+
+    #rotation-cube:active {
+      cursor: grabbing;
+    }
+
+    .cube-face {
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      border: 2px solid rgba(255, 255, 255, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: white;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+      box-shadow: inset 0 0 20px rgba(255,255,255,0.2);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+
+    .cube-face-front  { background: rgba(0, 122, 255, 0.6); transform: translateZ(40px); }
+    .cube-face-back   { background: rgba(255, 59, 48, 0.6); transform: rotateY(180deg) translateZ(40px); }
+    .cube-face-right  { background: rgba(52, 199, 89, 0.6); transform: rotateY(90deg) translateZ(40px); }
+    .cube-face-left   { background: rgba(255, 149, 0, 0.6); transform: rotateY(-90deg) translateZ(40px); }
+    .cube-face-top    { background: rgba(175, 82, 222, 0.6); transform: rotateX(90deg) translateZ(40px); }
+    .cube-face-bottom { background: rgba(255, 204, 0, 0.6); transform: rotateX(-90deg) translateZ(40px); }
+
+    .axis-label {
+      position: absolute;
+      font-size: 10px;
+      font-weight: 600;
+      color: white;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+      pointer-events: none;
+    }
+
+    #axis-x { top: 50%; right: -30px; transform: translateY(-50%); }
+    #axis-y { top: -20px; left: 50%; transform: translateX(-50%); }
+    #axis-z { bottom: -20px; left: 50%; transform: translateX(-50%); }
+
+    .cube-hint {
+      position: absolute;
+      bottom: -28px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      color: rgba(255,255,255,0.8);
+      white-space: nowrap;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
 
-  <!-- Error handling container -->
   <div id="error-message" role="alert">
     <strong>Error:</strong> <span id="error-text">Failed to load 3D model.</span>
     <br><br>
@@ -150,47 +248,70 @@
     </button>
   </div>
 
+  <!-- ALL UI ELEMENTS MUST BE INSIDE <model-viewer> FOR WEBXR DOM OVERLAY -->
   <model-viewer 
     id="ar-model"
     src="./escultura.glb" 
     alt="A 3D model of a sculpture"
     ar 
-    ar-modes="scene-viewer webxr quick-look" 
+    ar-modes="webxr scene-viewer quick-look" 
     ar-placement="floor"
+    ar-tracking="surface"
     camera-controls 
+    camera-orbit="0deg 75deg 2.25m"
+    camera-target="0m -0.15m 0m"
     shadow-intensity="1"
+    shadow-softness="0.8"
+    shadow-bias="-0.003"
     exposure="1"
     environment-image="neutral">
+
+    <!-- AR Hint -->
+    <div id="ar-hint">Move phone slowly over the floor to detect surface</div>
+
+    <!-- UI Layer -->
+    <div id="ui-layer">
+      <div class="flip-button-container">
+        <button id="ar-button" class="flip-button" aria-label="View sculpture in Augmented Reality">
+          <div class="flip-button-inner">
+            <div class="flip-button-front">
+              <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+              <span>View in AR</span>
+            </div>
+            <div class="flip-button-back">
+              <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+              <span>Activating...</span>
+            </div>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <!-- 3D Rotation Cube Control (Now inside model-viewer) -->
+    <div id="rotation-cube-container">
+      <div id="rotation-cube">
+        <div class="cube-face cube-face-front">F</div>
+        <div class="cube-face cube-face-back">B</div>
+        <div class="cube-face cube-face-right">R</div>
+        <div class="cube-face cube-face-left">L</div>
+        <div class="cube-face cube-face-top">T</div>
+        <div class="cube-face cube-face-bottom">Bot</div>
+        <span class="axis-label" id="axis-x">X</span>
+        <span class="axis-label" id="axis-y">Y</span>
+        <span class="axis-label" id="axis-z">Z</span>
+      </div>
+      <div class="cube-hint">Drag to rotate in AR</div>
+    </div>
+
   </model-viewer>
 
-  <!-- UI Layer with Double-Sided AR Button -->
-  <div id="ui-layer">
-    <div class="flip-button-container">
-      <button id="ar-button" class="flip-button" aria-label="View sculpture in Augmented Reality">
-        <div class="flip-button-inner">
-          <!-- Front Face -->
-          <div class="flip-button-front">
-            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
-            <span>View in AR</span>
-          </div>
-          <!-- Back Face -->
-          <div class="flip-button-back">
-            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-            <span>Activating...</span>
-          </div>
-        </div>
-      </button>
-    </div>
-  </div>
-
   <script>
-    // Phase 1 & 2: Robust Error Handling + Custom AR Button Logic
     const modelViewer = document.querySelector('#ar-model');
     const errorMessage = document.querySelector('#error-message');
     const errorText = document.querySelector('#error-text');
     const arButton = document.querySelector('#ar-button');
+    const rotationCube = document.querySelector('#rotation-cube');
 
-    // 1. Error Handling
     modelViewer.addEventListener('error', (event) => {
       console.error('[Model Viewer Error]', event);
       errorText.textContent = 'Failed to load the 3D model. Please check the file path (./escultura.glb) and ensure you are using a secure (HTTPS) connection.';
@@ -203,19 +324,82 @@
       errorMessage.style.display = 'none';
     });
 
-    // 2. Custom AR Button Logic
     arButton.addEventListener('click', () => {
       arButton.classList.add('flipped');
       modelViewer.activateAR();
     });
 
-    // 3. Reset button state if AR session is dismissed or fails
+    // Optional: Keep JS status tracking for console logging or extra logic
     modelViewer.addEventListener('ar-status', (event) => {
       const status = event.detail.status;
+      console.log('[AR Status]', status);
+      
       if (status === 'failed' || status === 'not-presenting') {
         arButton.classList.remove('flipped');
       }
     });
+
+    // 3D Rotation Cube Logic
+    let isDragging = false;
+    let previousMousePosition = { x: 0, y: 0 };
+    let rotation = { x: 0, y: 0 };
+
+    rotationCube.addEventListener('mousedown', startDrag);
+    rotationCube.addEventListener('touchstart', startDrag, { passive: false });
+
+    // CRITICAL: Prevent WebXR from interpreting cube drags as model rotations
+    rotationCube.addEventListener('beforexrselect', (e) => {
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', drag);
+    document.addEventListener('touchmove', drag, { passive: false });
+
+    document.addEventListener('mouseup', endDrag);
+    document.addEventListener('touchend', endDrag);
+
+    function startDrag(e) {
+      isDragging = true;
+      const pos = getEventPosition(e);
+      previousMousePosition = pos;
+      e.preventDefault();
+    }
+
+    function drag(e) {
+      if (!isDragging) return;
+      e.preventDefault();
+      
+      const pos = getEventPosition(e);
+      const deltaX = pos.x - previousMousePosition.x;
+      const deltaY = pos.y - previousMousePosition.y;
+
+      rotation.y += deltaX * 0.5;
+      rotation.x += deltaY * 0.5;
+      rotation.x = Math.max(-90, Math.min(90, rotation.x));
+
+      rotationCube.style.transform = `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`;
+
+      // Sync with model-viewer camera orbit
+      const currentOrbit = modelViewer.getCameraOrbit();
+      const theta = currentOrbit.theta + deltaX * 0.01;
+      const phi = Math.max(0.1, Math.min(Math.PI - 0.1, currentOrbit.phi + deltaY * 0.01));
+      const radius = currentOrbit.radius;
+      
+      modelViewer.cameraOrbit = `${theta}rad ${phi}rad ${radius}m`;
+
+      previousMousePosition = pos;
+    }
+
+    function endDrag() {
+      isDragging = false;
+    }
+
+    function getEventPosition(e) {
+      if (e.touches && e.touches.length > 0) {
+        return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      }
+      return { x: e.clientX, y: e.clientY };
+    }
 
     console.log('[App Init] User Agent:', navigator.userAgent);
     console.log('[App Init] Secure Context:', window.isSecureContext ? 'Yes' : 'No');
